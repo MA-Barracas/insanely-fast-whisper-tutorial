@@ -140,7 +140,6 @@ The next step is to summarize the content using the Cohere API. From the free ti
 
 ```python
 import cohere
-from google.colab import userdata
 import os
 
 # Check if running in Colab
