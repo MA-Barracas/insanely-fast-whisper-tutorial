@@ -1,77 +1,84 @@
-## **Mastering YouTube Audio Transcription with Python: A Step-by-Step Guide Using Huggingface and Insanely-Fast-Whisper**
 
-In the rapidly evolving world of data science and AI, the ability to efficiently process and analyze audio data can open doors to countless opportunities. Whether it's for accessibility, content creation, or data analysis, transcribing audio into text is a crucial skill. But beyond just getting the job done, doing it quickly and without spending a dime adds significant value. This tutorial is designed to show you how to download, transcribe, and summarize audio from YouTube videos using Python, all while minimizing costs and maximizing speed.
+### **YouTube Audio Transcription with Python: A Step-by-Step Guide Using Insanely-Fast-Whisper**
 
-We'll explore two powerful Python libraries: Huggingface Transformers and insanely-fast-whisper. Huggingface’s Whisper model offers high accuracy, but when time is of the essence, insanely-fast-whisper provides a lightning-fast alternative. Best of all, the entire process can be done for free using Google Colab with a T4 GPU, making it accessible to anyone with a GPU or a Mac.
+Processing and analyzing audio data can be a game-changer for many fields, whether you're a researcher, content creator, or data scientist. Transcribing YouTube videos into text allows for better accessibility, analysis, and repurposing of content. But what if you could do it very quickly and at zero cost? In this tutorial, we'll walk through how to download, transcribe, and summarize audio from YouTube videos using Python, utilizing tools like Huggingface's Transformers and insanely-fast-whisper, all for free and fast.
+
+### **Why Speed and Cost Matter**
+
+Transcribing audio is crucial, but being able to do it efficiently and without spending any money adds an extra layer of utility. If you need to process large batches of audio or transcribe lengthy videos, speed can save you hours, and the ability to do it on free platforms like Google Colab makes this process accessible to everyone, not just those with deep pockets.
 
 ### **Step 1: Setting Up the Environment**
 
-Before diving into the code, let's ensure our environment is ready. We'll be using a Google Colab notebook for this tutorial, which offers free access to a T4 GPU, perfect for handling the demands of audio processing. The first step is to install the necessary Python libraries.
+Let’s start by setting up the necessary environment. We'll be using a Google Colab notebook, which provides free access to a T4 GPU, making it ideal for handling audio transcription tasks. The first step is to install the required libraries.
 
 ```python
 !pip install --upgrade pip
-!pip install --upgrade transformers datasets[audio] accelerate
+!pip install --upgrade transformers accelerate
 !pip install --upgrade pytubefix pydub
 ```
 
 **Explanation:**
 
-1. **`pip install --upgrade pip`**: Keeping `pip` updated ensures you have access to the latest versions of libraries, which can include important bug fixes and performance improvements.
+1. **`pip install --upgrade pip`**: Keeping `pip` up to date ensures compatibility with the latest libraries and avoids potential installation issues.
    
-2. **`pip install --upgrade transformers datasets[audio] accelerate`**: 
-   - **Transformers**: This library by Huggingface provides a vast collection of pre-trained models for various NLP tasks, including speech recognition.
-   - **Datasets[audio]**: This extension of the Huggingface Datasets library is essential for loading and preprocessing audio datasets.
-   - **Accelerate**: This library optimizes model performance, particularly on GPUs, ensuring that your transcription process is as efficient as possible.
+2. **`pip install --upgrade transformers accelerate`**:
+   - **Transformers**: This library by Huggingface contains cutting-edge models for a variety of NLP tasks, including automatic speech recognition (ASR).
+   - **Accelerate**: This library optimizes the performance of the Huggingface models, particularly when running on GPUs, helping us make the most of the available hardware resources.
    
 3. **`pip install --upgrade pytubefix pydub`**:
-   - **Pytubefix**: Due to recent bugs in `pytube`, we use `pytubefix` to reliably download YouTube videos. This is crucial for ensuring the audio is correctly extracted.
-   - **Pydub**: A library for audio processing, `pydub` handles conversions between different audio formats, which is a key step in preparing the audio for transcription.
+   - **Pytubefix**: This is a fork of `pytube`, a YouTube downloader library. `pytubefix` resolves recent bugs, ensuring you can download YouTube audio streams without interruptions.
+   - **Pydub**: A library for handling and converting audio formats, `pydub` is essential for converting downloaded audio to MP3 format, making it compatible with our speech recognition models.
 
 ### **Step 2: Downloading and Converting YouTube Audio to MP3**
 
-With the environment set up, the next step is to download the audio from a YouTube video and convert it to an MP3 file. This process is essential because most speech-to-text models, including the ones we’ll be using, work best with common audio formats like MP3 or WAV.
+Now that the environment is set up, the next step is to download the audio from a YouTube video and convert it to an MP3 file. We’ll be using Geoffrey Hinton’s lecture, “Will Digital Intelligence Replace Biological Intelligence?”.
 
 ```python
 from pytubefix import YouTube  
 from pydub import AudioSegment
 import os
-import traceback  
+import traceback 
 
-def download_audio_mp3(url):
+def descargar_audio_mp3(url):
     try:
+        # Descarga del video
         yt = YouTube(url)
         video = yt.streams.filter(only_audio=True).first()
         output_file = video.download()
 
+        # Conversión a MP3 usando pydub
         mp3_filename = os.path.splitext(output_file)[0] + ".mp3"
         audio = AudioSegment.from_file(output_file)
         audio.export(mp3_filename, format="mp3")
 
+        # Eliminación del archivo original
         os.remove(output_file)
 
-        print(f"MP3 saved as: {mp3_filename}")
+        print(f"Archivo MP3 guardado como: {mp3_filename}")
         return mp3_filename
     except Exception as e:
-        print("Error: ", e)
+        print("Ha ocurrido un error: ", e)
         print(traceback.format_exc())
         return None
+
+url = "https://www.youtube.com/watch?v=N1TEjTeQeg0"
+audio_filename = descargar_audio_mp3(url)
 ```
 
 **Explanation:**
 
-- **`YouTube(url)`**: Creates an instance of the YouTube object using the provided video URL.
-- **`video = yt.streams.filter(only_audio=True).first()`**: Filters out all non-audio streams, ensuring we download only the audio.
-- **`video.download()`**: Downloads the selected audio stream.
-- **`AudioSegment.from_file(output_file)`**: Reads the downloaded audio file, allowing further manipulation.
-- **`audio.export(mp3_filename, format="mp3")`**: Converts the downloaded audio into MP3 format, which is compatible with our transcription models.
-- **`os.remove(output_file)`**: Deletes the original file to save space, since it’s no longer needed after conversion.
-- **`traceback.format_exc()`**: Provides detailed error information if something goes wrong, making debugging easier.
+- **`YouTube(url)`**: Initializes a YouTube object with the video URL.
+- **`yt.streams.filter(only_audio=True).first()`**: Filters the available streams to download only the audio, reducing unnecessary file size.
+- **`video.download()`**: Downloads the audio stream to the local environment.
+- **`AudioSegment.from_file(output_file)`**: Uses `pydub` to load the downloaded audio.
+- **`audio.export(mp3_filename, format="mp3")`**: Converts the audio file to MP3 format, which is compatible with most speech recognition models.
+- **`os.remove(output_file)`**: Deletes the original audio file after conversion to save space.
 
-This function ensures that the process of downloading and converting audio is both efficient and resilient to errors.
+This function ensures a seamless process of downloading and converting audio into a format ready for transcription.
 
 ### **Step 3: Transcribing Audio with Huggingface Transformers**
 
-With our MP3 file ready, the next step is to transcribe the audio into text. We’ll use Huggingface’s `whisper-large-v3` model, known for its accuracy in automatic speech recognition (ASR). This model requires around 3GB of GPU memory, which the free T4 GPU in Colab handles well.
+With the MP3 file ready, we can now use Huggingface’s `whisper-large-v3` model to transcribe the audio into text. This model is known for its high accuracy in automatic speech recognition tasks.
 
 ```python
 import torch
@@ -96,6 +103,7 @@ pipe = pipeline(
     feature_extractor=processor.feature_extractor,
     torch_dtype=torch_dtype,
     device=device,
+    batch_size=24
 )
 
 result = pipe(audio_filename)
@@ -103,28 +111,43 @@ result = pipe(audio_filename)
 
 **Explanation:**
 
-- **`device = "cuda:0" if torch.cuda.is_available() else "cpu"`**: Automatically selects the best available hardware (GPU or CPU) for processing. Utilizing a GPU significantly speeds up the transcription process.
-- **`torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32`**: This sets the data type to `float16` on GPUs to reduce memory usage, which is critical when working with large models.
-- **`AutoModelForSpeechSeq2Seq.from_pretrained(model_id, ...)`**: Loads the Whisper model pre-trained on speech-to-text tasks. It’s optimized for low memory usage while still providing high accuracy.
-- **`AutoProcessor.from_pretrained(model_id)`**: The processor handles the necessary preprocessing steps, such as tokenization and feature extraction, ensuring the audio is in the correct format for the model.
-- **`pipeline(...)`**: Simplifies the inference process by combining the model and processor into a single pipeline for automatic speech recognition.
-- **`result = pipe(audio_filename)`**: This line performs the actual transcription, converting the audio into text. The process takes around five minutes for a 40-minute audio file.
+- **`device = "cuda:0" if torch.cuda.is_available() else "cpu"`**: Automatically detects whether a GPU is available and uses it if possible, as GPUs significantly speed up the transcription process.
+- **`torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32`**: Chooses the most appropriate data type based on the hardware, with `float16` optimized for GPUs to reduce memory usage without sacrificing accuracy.
+- **`AutoModelForSpeechSeq2Seq.from_pretrained(model_id, ...)`**: Loads the pre-trained Whisper model optimized for speech recognition.
+- **`pipeline(...)`**: Combines the model and processor into a single pipeline that simplifies the transcription process.
+- **`batch_size=24`**: Increases the batch size, which helps with processing speed when working with longer files.
+
+This transcription process takes a few minutes depending on the length of the audio file and the hardware available.
 
 ### **Step 4: Summarizing the Transcription with Cohere API**
 
-Once we have the transcription, summarizing the text can help extract key insights quickly. The Cohere API is perfect for this, offering powerful NLP capabilities that allow us to generate structured summaries from large volumes of text.
+Once we have the transcription, the next step is to summarize the content using the Cohere API. This is useful for quickly extracting key points from a long transcription.
 
 ```python
 import cohere
 from google.colab import userdata
+import os
 
-co = cohere.Client(api_key=userdata.get('COHERE_API_KEY'))
+# Check if running in Colab
+try:
+    import google.colab
+    IN_COLAB = True
+except ImportError:
+    IN_COLAB = False
+
+# Get API key
+if IN_COLAB:
+    api_key = userdata.get('COHERE_API_KEY')
+else:
+    api_key = os.environ.get('COHERE_API_KEY')
+
+co = cohere.Client(api_key=api_key)
 
 query = f"""
 Write a thorough summary for this text: '''
 {result["text"]}
 '''
-Give extensive info about the content. 
+Give extensive info about the content.
 Discuss all important points raised throughout.
 At the end, create a section of "Conclusions" and another for "Summary"
 """
@@ -140,49 +163,40 @@ display(Markdown(cohere_query.text))
 
 **Explanation:**
 
-- **`cohere.Client(api_key=userdata.get('COHERE_API_KEY'))`**: Initializes the Cohere API client using your API key, enabling access to its text generation and summarization capabilities.
-- **`query = f"""Write a thorough summary for this text: ''' {result["text"]} '''"""`**: This query prompts the Cohere model to generate a detailed summary, helping to distill the most important points from the transcription.
-- **`co.chat(...)`**: Sends the query to the Cohere model and retrieves the summarized text.
-- **`display(Markdown(cohere_query.text))`**: Displays the summary in a readable Markdown format within the Colab notebook.
+- **`userdata.get('COHERE_API_KEY')`**: Fetches the Cohere API key in Google Colab, or from the environment if running locally.
+- **`cohere.Client(api_key)`**: Initializes the Cohere client using the provided API key.
+- **`co.chat(model="command-r-plus", message=query)`**: Sends the transcription to Cohere for summarization using the `command-r-plus` model, which generates detailed summaries of long texts.
+
+This step is particularly useful when dealing with lengthy videos, saving time by automatically creating a concise overview of the transcription.
 
 ### **Step 5: Transcribing Audio with Insanely-Fast-Whisper**
 
-While Huggingface’s Whisper model is highly accurate, sometimes speed is of the essence. Insanely-fast-whisper provides a faster alternative, transcribing audio files in a fraction of the time. Let’s install and use it:
+If time is a concern, we can use the insanely-fast-whisper library, which dramatically speeds up the transcription process. This tool is ideal when speed is prioritized over detailed control.
 
 ```python
 !pip install insanely-fast-whisper
 ```
 
-**Explanation:**
-
-- **`insanely-fast-whisper`**: This library is specifically optimized for speed, allowing you to transcribe audio quickly, making it ideal for scenarios where time is a critical factor.
-
-Next, we need to install `pipx` and `venv` to run the CLI-based insanely-fast-whisper:
+Once installed, we run the transcription process through the command line interface (CLI) using `pipx`:
 
 ```python
 !pip install -q pipx && apt install python3.10-venv
-```
-
-**Explanation:**
-
-- **`pipx`**: This tool installs and runs Python applications in isolated environments, preventing dependency conflicts.
-- **`python3
-
-.10-venv`**: The `venv` module creates isolated Python environments, ensuring that different projects don’t interfere with each other.
-
-Now, let’s run insanely-fast-whisper:
-
-```python
 !pipx run insanely-fast-whisper --file-name "Cursor AI tutorial for beginners.mp3"
 ```
 
 **Explanation:**
 
-- **`!pipx run insanely-fast-whisper --file-name "Cursor AI tutorial for beginners.mp3"`**: This command uses `pipx` to run insanely-fast-whisper, which transcribes the audio file in about 1 minute and 40 seconds—much faster than the 5 minutes required by Huggingface’s model. However, it does require more GPU memory, around 9GB, so it’s essential to ensure your environment can handle this.
+- **`pipx`**: Allows running Python applications in isolated environments without installing them globally, reducing the risk of conflicts with other packages.
+- **`python3.10-venv`**: Sets up a virtual environment, ensuring that dependencies do not interfere with other projects.
+- **`pipx run insanely-fast-whisper`**: Runs the transcription directly from the command line, offering faster results than Huggingface Transformers, albeit with higher GPU memory usage (around 9GB).
+
+This transcription process takes just over a minute,
+
+ making it perfect for scenarios where time is limited.
 
 ### **Conclusion**
 
-This tutorial has guided you through the process of downloading, transcribing, and summarizing audio from YouTube videos using Python, all while keeping costs at zero and maximizing speed. By leveraging Huggingface Transformers and insanely-fast-whisper, you can choose the tool that best suits your needs—whether it’s the high accuracy of Whisper or the blazing speed of insanely-fast-whisper. Combined with the Cohere API for summarization, this workflow provides a powerful, efficient way to handle audio data.
+In this tutorial, we explored how to download, transcribe, and summarize YouTube videos using Python. By leveraging the Huggingface Transformers and insanely-fast-whisper libraries, you can choose between high accuracy or speed, depending on your needs. The entire process, from downloading to summarizing, can be done for free in Google Colab, making it accessible to anyone with basic Python knowledge and access to a GPU.
 
-With these tools, you’re not just transcribing audio—you’re doing it faster, for free, and in a way that can easily be integrated into various workflows, from content creation to data analysis. Try it out and see how it can transform your approach to working with audio content!
+This workflow provides an efficient way to handle audio data, whether you need detailed transcripts or quick summaries. Try it out and see how it can transform your approach to working with audio content!
 
